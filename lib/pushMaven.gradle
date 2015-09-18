@@ -11,6 +11,7 @@ if (isRelease == 'true') {
     println 'DEBUG BUILD ' + version
 }
 
+/*
 afterEvaluate { project ->
     uploadArchives {
         repositories {
@@ -77,4 +78,4 @@ afterEvaluate { project ->
         archives androidSourcesJar
         archives androidJavadocsJar
     }
-}
+}*/
