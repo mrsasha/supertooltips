@@ -70,6 +70,8 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
 
     private OnToolTipViewClickedListener mListener;
 
+    private boolean mClickEnabled;
+
     public ToolTipView(final Context context) {
         super(context);
         init();
@@ -218,6 +220,10 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
         }
     }
 
+    public void setClickEnabled(boolean enabled) {
+        mClickEnabled = enabled;
+    }
+
     public void setPointerCenterX(final int pointerCenterX) {
         int pointerWidth = Math.max(mTopPointerView.getMeasuredWidth(), mBottomPointerView.getMeasuredWidth());
 
@@ -279,10 +285,12 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
 
     @Override
     public void onClick(final View view) {
-        remove();
+        if (mClickEnabled) {
+            remove();
 
-        if (mListener != null) {
-            mListener.onToolTipViewClicked(this);
+            if (mListener != null) {
+                mListener.onToolTipViewClicked(this);
+            }
         }
     }
 
