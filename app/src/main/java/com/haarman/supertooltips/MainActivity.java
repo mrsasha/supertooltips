@@ -110,7 +110,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Tool
 
     private void addOrangeToolTipView() {
         ToolTip toolTip = new ToolTip()
-                .withText("Tap me!")
+                .withText("Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! Tap me! ")
                 .withColor(getResources().getColor(R.color.holo_orange));
 
         mOrangeToolTipView = mToolTipFrameLayout.showToolTipForView(toolTip, findViewById(R.id.activity_main_orangetv));
