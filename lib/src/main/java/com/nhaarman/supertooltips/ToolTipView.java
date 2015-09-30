@@ -46,6 +46,8 @@ import java.util.Collection;
  */
 public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreDrawListener, View.OnClickListener {
 
+    private static final String TAG = "SUPERTOOLTIPS";
+
     public static final String TRANSLATION_Y_COMPAT = "translationY";
 
     public static final String TRANSLATION_X_COMPAT = "translationX";
@@ -110,6 +112,7 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
 
     @Override
     public boolean onPreDraw() {
+        try {
         getViewTreeObserver().removeOnPreDrawListener(this);
         mDimensionsKnown = true;
         ViewGroup parentView = ((ViewGroup) getParent());
@@ -124,6 +127,10 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
         if (mToolTip != null) {
             applyToolTipPosition();
         }
+        } catch (Exception e) {
+            Log.e(TAG, "onPreDraw exception = " + e.toString());
+        }
+
         return true;
     }
 
@@ -214,7 +221,7 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
             toolTipViewY = toolTipViewAboveY;
         }
 
-        Log.i("SUPERTOOLTIPS", "applyToolTipPosition toolTipViewX = " + toolTipViewX + ", toolTipViewY = " + toolTipViewY);
+        Log.i(TAG, "applyToolTipPosition toolTipViewX = " + toolTipViewX + ", toolTipViewY = " + toolTipViewY);
 
         animateToolTip(toolTipViewX, toolTipViewY);
     }
