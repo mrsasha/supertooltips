@@ -15,27 +15,35 @@
 
 package com.nhaarman.supertooltips;
 
+import com.nhaarman.supertooltips.exception.NoOverflowMenuRuntimeException;
+import com.nhaarman.supertooltips.exception.NoTitleViewRuntimeException;
+import com.nhaarman.supertooltips.exception.ViewNotFoundRuntimeException;
+
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
-import com.nhaarman.supertooltips.exception.NoOverflowMenuRuntimeException;
-import com.nhaarman.supertooltips.exception.NoTitleViewRuntimeException;
-import com.nhaarman.supertooltips.exception.ViewNotFoundRuntimeException;
-
 public class ToolTipRelativeLayout extends RelativeLayout {
 
+    private static final String TAG = "SUPERTOOLTIPS";
+
     public static final String ACTION_BAR_TITLE = "action_bar_title";
+
     public static final String ID = "id";
+
     public static final String ANDROID = "android";
+
     public static final String ACTION_BAR = "action_bar";
+
     public static final String ACTION_MENU_VIEW = "ActionMenuView";
+
     public static final String OVERFLOW_MENU_BUTTON = "OverflowMenuButton";
 
     public ToolTipRelativeLayout(final Context context) {
@@ -54,17 +62,21 @@ public class ToolTipRelativeLayout extends RelativeLayout {
      * Shows a {@link ToolTipView} based on given {@link ToolTip} at the proper
      * location relative to given {@link View}.
      *
-     * @param toolTip
-     *            the ToolTip to show.
-     * @param view
-     *            the View to position the ToolTipView relative to.
-     *
+     * @param toolTip the ToolTip to show.
+     * @param view    the View to position the ToolTipView relative to.
      * @return the ToolTipView that was created.
      */
     public ToolTipView showToolTipForView(final ToolTip toolTip, final View view) {
-        final ToolTipView toolTipView = new ToolTipView(getContext());
-        toolTipView.setToolTip(toolTip, view);
-        addView(toolTipView);
+        ToolTipView toolTipView = null;
+
+        try {
+            toolTipView = new ToolTipView(getContext());
+            toolTipView.setToolTip(toolTip, view);
+            addView(toolTipView);
+        } catch (Exception e) {
+            Log.e(TAG, "error in showToolTipForView = " + e.toString());
+        }
+
         return toolTipView;
     }
 
@@ -75,26 +87,30 @@ public class ToolTipRelativeLayout extends RelativeLayout {
      * {@link ViewNotFoundRuntimeException} if the View is not found. You can
      * choose to ignore this by catching the ViewNotFoundRuntimeException.
      *
-     * @param activity
-     *            the Activity which holds the ActionBar.
-     * @param toolTip
-     *            the ToolTip to show.
-     * @param resId
-     *            the resource id of the View to position the ToolTipView
-     *            relative to.
+     * @param activity the Activity which holds the ActionBar.
+     * @param toolTip  the ToolTip to show.
+     * @param resId    the resource id of the View to position the ToolTipView
+     *                 relative to.
      * @return the ToolTipView that was created.
      */
     public ToolTipView showToolTipForViewResId(final Activity activity, final ToolTip toolTip, final int resId) {
-        final ToolTipView toolTipView = new ToolTipView(getContext());
-        final View decorView = activity.getWindow().getDecorView();
-        final View view = decorView.findViewById(resId);
+        ToolTipView toolTipView = null;
 
-        if (view == null) {
-            throw new ViewNotFoundRuntimeException();
+        try {
+            toolTipView = new ToolTipView(getContext());
+            final View decorView = activity.getWindow().getDecorView();
+            final View view = decorView.findViewById(resId);
+
+            if (view == null) {
+                throw new ViewNotFoundRuntimeException();
+            }
+
+            toolTipView.setToolTip(toolTip, view);
+            addView(toolTipView);
+        } catch (Exception e) {
+            Log.e(TAG, "error in showToolTipForViewResId = " + e.toString());
         }
 
-        toolTipView.setToolTip(toolTip, view);
-        addView(toolTipView);
         return toolTipView;
     }
 
@@ -103,10 +119,8 @@ public class ToolTipRelativeLayout extends RelativeLayout {
      * {@link ToolTip} at the proper location relative to the {@link ActionBar}
      * home {@link View}.
      *
-     * @param activity
-     *            the Activity which holds the ActionBar.
-     * @param toolTip
-     *            the ToolTip to show.
+     * @param activity the Activity which holds the ActionBar.
+     * @param toolTip  the ToolTip to show.
      * @return the ToolTipView that was created.
      */
     @TargetApi(11)
@@ -126,10 +140,8 @@ public class ToolTipRelativeLayout extends RelativeLayout {
      * find the View. It MAY cause your application to crash in future Android
      * versions.
      *
-     * @param activity
-     *            the Activity which holds the ActionBar.
-     * @param toolTip
-     *            the ToolTip to show.
+     * @param activity the Activity which holds the ActionBar.
+     * @param toolTip  the ToolTip to show.
      * @return the ToolTipView that was created.
      */
     @TargetApi(11)
@@ -152,10 +164,8 @@ public class ToolTipRelativeLayout extends RelativeLayout {
      * to find the View. It MAY cause your application to crash in future
      * Android versions.
      *
-     * @param activity
-     *            the Activity which holds the ActionBar.
-     * @param toolTip
-     *            the ToolTip to show.
+     * @param activity the Activity which holds the ActionBar.
+     * @param toolTip  the ToolTip to show.
      * @return the ToolTipView that was created.
      */
     @TargetApi(11)
