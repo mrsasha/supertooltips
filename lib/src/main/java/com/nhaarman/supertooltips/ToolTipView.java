@@ -15,11 +15,18 @@
 
 package com.nhaarman.supertooltips;
 
+import com.nineoldandroids.animation.Animator;
+import com.nineoldandroids.animation.AnimatorListenerAdapter;
+import com.nineoldandroids.animation.AnimatorSet;
+import com.nineoldandroids.animation.ObjectAnimator;
+import com.nineoldandroids.view.ViewHelper;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.os.Build;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,12 +36,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
-import com.nineoldandroids.animation.Animator;
-import com.nineoldandroids.animation.AnimatorListenerAdapter;
-import com.nineoldandroids.animation.AnimatorSet;
-import com.nineoldandroids.animation.ObjectAnimator;
-import com.nineoldandroids.view.ViewHelper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,26 +47,39 @@ import java.util.Collection;
 public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreDrawListener, View.OnClickListener {
 
     public static final String TRANSLATION_Y_COMPAT = "translationY";
+
     public static final String TRANSLATION_X_COMPAT = "translationX";
+
     public static final String SCALE_X_COMPAT = "scaleX";
+
     public static final String SCALE_Y_COMPAT = "scaleY";
+
     public static final String ALPHA_COMPAT = "alpha";
 
     private ImageView mTopPointerView;
+
     private View mTopFrame;
+
     private ViewGroup mContentHolder;
+
     private TextView mToolTipTV;
+
     private View mBottomFrame;
+
     private ImageView mBottomPointerView;
+
     private View mShadowView;
 
     private ToolTip mToolTip;
+
     private View mView;
 
     private boolean mDimensionsKnown;
+
     private int mRelativeMasterViewY;
 
     private int mRelativeMasterViewX;
+
     private int mWidth;
 
     private OnToolTipViewClickedListener mListener;
@@ -98,8 +112,10 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
     public boolean onPreDraw() {
         getViewTreeObserver().removeOnPreDrawListener(this);
         mDimensionsKnown = true;
+        ViewGroup parentView = ((ViewGroup) getParent());
 
-        mWidth = mContentHolder.getWidth();
+        //this is to limit the tooltip width to not be bigger than the parent with margins (for tooltips that occupy the whole screen width)
+        mWidth = Math.min(mContentHolder.getWidth(), parentView.getWidth());
 
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
         layoutParams.width = mWidth;
@@ -147,6 +163,9 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
     }
 
     private void applyToolTipPosition() {
+        ViewGroup parentView = ((ViewGroup) getParent());
+        ViewGroup.MarginLayoutParams parentViewMarginLayoutParams = (MarginLayoutParams) parentView.getLayoutParams();
+
         final int[] masterViewScreenPosition = new int[2];
         mView.getLocationOnScreen(masterViewScreenPosition);
 
@@ -154,21 +173,25 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
         mView.getWindowVisibleDisplayFrame(viewDisplayFrame);
 
         final int[] parentViewScreenPosition = new int[2];
-        ((View) getParent()).getLocationOnScreen(parentViewScreenPosition);
+        parentView.getLocationOnScreen(parentViewScreenPosition);
 
         final int masterViewWidth = mView.getWidth();
         final int masterViewHeight = mView.getHeight();
 
         mRelativeMasterViewX = masterViewScreenPosition[0] - parentViewScreenPosition[0];
         mRelativeMasterViewY = masterViewScreenPosition[1] - parentViewScreenPosition[1];
-        final int relativeMasterViewCenterX = mRelativeMasterViewX + masterViewWidth / 2;
+        final int relativeMasterViewCenterX = mRelativeMasterViewX + masterViewWidth / 2; //center of the master view
 
         int toolTipViewAboveY = mRelativeMasterViewY - getHeight();
         int toolTipViewBelowY = Math.max(0, mRelativeMasterViewY + masterViewHeight);
 
-        int toolTipViewX = Math.max(0, relativeMasterViewCenterX - mWidth / 2);
-        if (toolTipViewX + mWidth > viewDisplayFrame.right) {
-            toolTipViewX = viewDisplayFrame.right - mWidth;
+        int sidemargins = parentViewMarginLayoutParams.leftMargin + parentViewMarginLayoutParams.rightMargin;
+        int toolTipViewX = Math.max(0, relativeMasterViewCenterX - mWidth / 2 - sidemargins / 2); //translation now reads the margins
+
+        //if the sum of tooltip width and translation is bigger than the space provided by the parent, move the tooltip to the left
+        //(now also taking margins into account)
+        if (toolTipViewX + mWidth > (viewDisplayFrame.right - sidemargins)) {
+            toolTipViewX = viewDisplayFrame.right - mWidth - sidemargins;
         }
 
         setX(toolTipViewX);
@@ -191,6 +214,13 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
             toolTipViewY = toolTipViewAboveY;
         }
 
+        Log.i("SUPERTOOLTIPS", "applyToolTipPosition toolTipViewX = " + toolTipViewX + ", toolTipViewY = " + toolTipViewY);
+
+        animateToolTip(toolTipViewX, toolTipViewY);
+    }
+
+    private void animateToolTip(int toolTipViewX, int toolTipViewY) {
+
         if (mToolTip.getAnimationType() == ToolTip.AnimationType.NONE) {
             ViewHelper.setTranslationY(this, toolTipViewY);
             ViewHelper.setTranslationX(this, toolTipViewX);
@@ -198,8 +228,10 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
             Collection<Animator> animators = new ArrayList<>(5);
 
             if (mToolTip.getAnimationType() == ToolTip.AnimationType.FROM_MASTER_VIEW) {
-                animators.add(ObjectAnimator.ofInt(this, TRANSLATION_Y_COMPAT, mRelativeMasterViewY + mView.getHeight() / 2 - getHeight() / 2, toolTipViewY));
-                animators.add(ObjectAnimator.ofInt(this, TRANSLATION_X_COMPAT, mRelativeMasterViewX + mView.getWidth() / 2 - mWidth / 2, toolTipViewX));
+                animators.add(ObjectAnimator
+                        .ofInt(this, TRANSLATION_Y_COMPAT, mRelativeMasterViewY + mView.getHeight() / 2 - getHeight() / 2, toolTipViewY));
+                animators.add(ObjectAnimator
+                        .ofInt(this, TRANSLATION_X_COMPAT, mRelativeMasterViewX + mView.getWidth() / 2 - mWidth / 2, toolTipViewX));
             } else if (mToolTip.getAnimationType() == ToolTip.AnimationType.FROM_TOP) {
                 animators.add(ObjectAnimator.ofFloat(this, TRANSLATION_Y_COMPAT, 0, toolTipViewY));
             }
@@ -265,8 +297,10 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
         } else {
             Collection<Animator> animators = new ArrayList<>(5);
             if (mToolTip.getAnimationType() == ToolTip.AnimationType.FROM_MASTER_VIEW) {
-                animators.add(ObjectAnimator.ofInt(this, TRANSLATION_Y_COMPAT, (int) getY(), mRelativeMasterViewY + mView.getHeight() / 2 - getHeight() / 2));
-                animators.add(ObjectAnimator.ofInt(this, TRANSLATION_X_COMPAT, (int) getX(), mRelativeMasterViewX + mView.getWidth() / 2 - mWidth / 2));
+                animators.add(ObjectAnimator
+                        .ofInt(this, TRANSLATION_Y_COMPAT, (int) getY(), mRelativeMasterViewY + mView.getHeight() / 2 - getHeight() / 2));
+                animators.add(ObjectAnimator
+                        .ofInt(this, TRANSLATION_X_COMPAT, (int) getX(), mRelativeMasterViewX + mView.getWidth() / 2 - mWidth / 2));
             } else {
                 animators.add(ObjectAnimator.ofFloat(this, TRANSLATION_Y_COMPAT, getY(), 0));
             }
@@ -351,12 +385,14 @@ public class ToolTipView extends LinearLayout implements ViewTreeObserver.OnPreD
     }
 
     public interface OnToolTipViewClickedListener {
+
         void onToolTipViewClicked(ToolTipView toolTipView);
     }
 
     private class AppearanceAnimatorListener extends AnimatorListenerAdapter {
 
         private final float mToolTipViewX;
+
         private final float mToolTipViewY;
 
         AppearanceAnimatorListener(final float fToolTipViewX, final float fToolTipViewY) {
